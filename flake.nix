@@ -1,30 +1,27 @@
 {
+  description = "Python ML dev environment";
+
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
   outputs = { self, nixpkgs }: let
-    pkgs = nixpkgs.legacyPackages.x86_64-linux;
+    system = "x86_64-linux";
+    pkgs   = nixpkgs.legacyPackages.${system};
 
-    # Python 3.11 with sphinx pinned to 8.x
-    python = pkgs.python311.override {
-      packageOverrides = self: super: {
-        sphinx = super.sphinx.overridePythonAttrs (old: rec {
-          version = "8.2.3";
-          src = super.fetchPypi {
-            pname = "sphinx";
-            inherit version;
-            hash = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
-          };
-        });
-      };
-    };
-
-    pythonEnv = python.withPackages (ps: with ps; [
-      numpy matplotlib scikit-learn
-      jupyterlab ipykernel
+    # python312 supports sphinx 9.x — no conflict
+    pythonEnv = pkgs.python312.withPackages (ps: with ps; [
+      numpy
+      matplotlib
+      scikit-learn
+      jupyterlab
+      ipykernel
     ]);
   in {
-    devShells.x86_64-linux.default = pkgs.mkShell {
+    devShells.${system}.default = pkgs.mkShell {
       packages = [ pythonEnv ];
+      shellHook = ''
+        echo "Python: $(python --version)"
+        echo "Jupyter: $(jupyter --version | head -1)"
+      '';
     };
   };
 }
