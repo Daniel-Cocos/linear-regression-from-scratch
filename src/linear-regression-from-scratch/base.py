@@ -1,24 +1,28 @@
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 import numpy as np
-from typing import Any
 
 from .preprocessing import StandardScaler
 from .solvers import SOLVERS, minimize
 from .utils import (
     as_2d_float_array,
     as_column_vector,
+    check_fitted,
     check_non_negative,
     check_positive,
 )
 
+__all__ = ["BaseRegression"]
+
+log = logging.getLogger("linear_regression_from_scratch")
 _ALL_SOLVERS = (*SOLVERS, "normal")
 
 
 class BaseRegression:
-    """Shared linear-regression engine. Use a concrete subclass instead."""
+    """Shared linear regression engine. Use a concrete subclass instead"""
 
     def __init__(
         self,
@@ -54,7 +58,7 @@ class BaseRegression:
         if verbose:
             logging.basicConfig(level=logging.INFO)
 
-        # Learned attributes (populated by ``fit``).
+        # Learned attributes (populated by fit)
         self.w_: np.ndarray | None = None
         self.b_: float | np.ndarray | None = None
         self.cost_history_: list[float] = []
@@ -62,7 +66,7 @@ class BaseRegression:
         self.scaler_: StandardScaler | None = None
         self.n_features_in_: int | None = None
 
-    # Penalty hooks -- overridden by subclasses
+    # Penalty hooks overridden by subclasses
     def _penalty_gradient(self, W: np.ndarray) -> np.ndarray:
         return np.zeros_like(W)
 
@@ -98,7 +102,7 @@ class BaseRegression:
             self._fit_normal(Xr, Yr)
             return self
 
-        # Train on standardised features for numerically stable descent.
+        # Train on standardised features for numerically stable descent
         if self.standardize:
             self.scaler_ = StandardScaler().fit(Xr)
             Xf = self.scaler_.transform(Xr)
@@ -130,7 +134,7 @@ class BaseRegression:
         self.cost_history_ = history
         self.n_iter_ = len(history)
 
-        # Report coefficients in the *original* feature space.
+        # Report coefficients in the original feature space
         if self.scaler_ is not None:
             W, b = self.scaler_.unstandardize_weights(W, b)
 
@@ -147,7 +151,7 @@ class BaseRegression:
         return self
 
     def _fit_normal(self, X: np.ndarray, Y: np.ndarray) -> "BaseRegression":
-        """Closed-form ordinary least squares via the pseudo-inverse."""
+        """Closed form ordinary least squares via the pseudo inverse"""
         Xb = np.hstack([X, np.ones((X.shape[0], 1))])
         coef, *_ = np.linalg.lstsq(Xb, Y, rcond=None)  # (n_features + 1, k)
         W, b = coef[:-1], coef[-1]
@@ -159,7 +163,68 @@ class BaseRegression:
 
     @staticmethod
     def _store_params(W: np.ndarray, b: np.ndarray, n_outputs: int):
-        """Flatten single-output params for an intuitive public API."""
+        """Flatten single output params for an intuitive public API"""
         if n_outputs == 1:
             return W[:, 0].copy(), float(b[0])
         return W.copy(), b.copy()
+
+    # Inference & metrics
+    def predict(self, X: Any) -> np.ndarray:
+        """Predict targets. Returns shape (m,) for single output, (m, k) for multi"""
+        check_fitted(self)
+        X = as_2d_float_array(X, "X")
+        return X @ self.w_ + self.b_  # 1-D w_ -> (m,); 2-D w_ -> (m, k)
+
+    def score(self, X: Any, y: Any) -> float:
+        """R^2 (coefficient of determination)."""
+        Y = as_column_vector(y, "y")
+        Yhat = as_column_vector(self.predict(X))
+        ss_res = float(np.sum((Y - Yhat) ** 2))
+        ss_tot = float(np.sum((Y - Y.mean()) ** 2))
+        return 1.0 - ss_res / ss_tot if ss_tot != 0.0 else 0.0
+
+    def rmse(self, X: Any, y: Any) -> float:
+        Y = as_column_vector(y, "y")
+        Yhat = as_column_vector(self.predict(X))
+        return float(np.sqrt(np.mean((Y - Yhat) ** 2)))
+
+    def mae(self, X: Any, y: Any) -> float:
+        Y = as_column_vector(y, "y")
+        Yhat = as_column_vector(self.predict(X))
+        return float(np.mean(np.abs(Y - Yhat)))
+
+    # Persistence
+    def save(self, path: str) -> None:
+        """Persist learned parameters + config to a .npz file"""
+        check_fitted(self)
+        np.savez(
+            path,
+            class_=type(self).__name__,
+            w_=self.w_,
+            b_=self.b_,
+            n_features_in_=self.n_features_in_,
+            n_iter_=self.n_iter_,
+        )
+
+    @classmethod
+    def load(cls, path: str) -> "BaseRegression":
+        data = np.load(path, allow_pickle=False)
+        obj = cls()
+        obj.w_ = np.asarray(data["w_"])
+        obj.b_ = (
+            np.asarray(data["b_"]).item()
+            if data["b_"].ndim == 0
+            else np.asarray(data["b_"])
+        )
+        obj.n_features_in_ = int(data["n_features_in_"])
+        obj.n_iter_ = int(data["n_iter_"])
+        return obj
+
+    def __repr__(self) -> str:
+        reg = getattr(self, "alpha", None)
+        reg_str = f", alpha={reg}" if reg is not None else ""
+        fitted = "fitted" if self.w_ is not None else "unfitted"
+        return (
+            f"{type(self).__name__}(lr={self.lr}, n_iter={self.n_iter}, "
+            f"solver={self.solver!r}{reg_str}) <{fitted}>"
+        )
