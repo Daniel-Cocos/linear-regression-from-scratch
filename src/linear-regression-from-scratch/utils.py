@@ -6,6 +6,7 @@ import numpy as np
 __all__ = [
     "as_2d_float_array",
     "as_column_vector",
+    "check_fitted",
     "check_non_negative",
     "check_positive",
 ]
@@ -25,6 +26,7 @@ def check_non_negative(value: float, name: str) -> float:
     if value < 0:
         raise ValueError(f"{name} must be non-negative, got {value!r}.")
     return float(value)
+
 
 def as_2d_float_array(arr: Any, name: str = "X") -> np.ndarray:
     """Coerce arr to a 2-D float64 ndarray, validating shape & finiteness."""
@@ -48,3 +50,11 @@ def as_column_vector(arr: Any, name: str = "y") -> np.ndarray:
     if not np.all(np.isfinite(Y)):
         raise ValueError(f"{name} contains NaN or +/- inf; clean the data first.")
     return Y
+
+
+def check_fitted(estimator: Any) -> None:
+    """Raise a helpful error if fit has not been called yet."""
+    if getattr(estimator, "w_", None) is None:
+        raise RuntimeError(
+            f"{type(estimator).__name__} is not fitted yet. Call .fit(X, y) first."
+        )
