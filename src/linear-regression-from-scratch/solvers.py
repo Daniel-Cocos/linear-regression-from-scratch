@@ -16,7 +16,7 @@ Prox = Callable[[np.ndarray], np.ndarray]
 
 
 def soft_threshold(x: np.ndarray, threshold: float) -> np.ndarray:
-    """Element-wise soft-thresholding"""
+    """Element-wise soft thresholding"""
     return np.sign(x) * np.maximum(np.abs(x) - threshold, 0.0)
 
 
@@ -69,7 +69,7 @@ def minimize(
 
     prev_cost: float | None = None
     for t in range(1, n_iter + 1):
-        # sample a mini-batch when the solver is stochastic
+        # sample a mini batch when the solver is stochastic
         if bs < m:
             idx = rng.integers(0, m, size=bs)
             Xb, Yb = X[idx], Y[idx]
@@ -95,7 +95,7 @@ def minimize(
             vbhat = Sb / (1.0 - beta2**t)
             W -= lr * mhat / (np.sqrt(vhat) + eps)
             b -= lr * mbhat / (np.sqrt(vbhat) + eps)
-        else:  # batch / sgd / minibatch -> vanilla gradient step
+        else:
             W -= lr * dW
             b -= lr * db
 
