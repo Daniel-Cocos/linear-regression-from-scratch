@@ -75,3 +75,71 @@ The tiny differences on the Lasso rows are expected: Lasso is solved with an
 iterative proximal-gradient method, so a perfect match takes more iterations.
 Both the accuracy (R2, RMSE, MAE) and the sparsity pattern line up with
 scikit-learn.
+
+## Quick start
+
+### Install with pip
+
+To develop and use inside this repository:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate        # Windows PowerShell: .venv\Scripts\Activate.ps1
+pip install -e ".[dev]"
+```
+
+To use it from a different project (installed from git):
+
+```bash
+pip install git+https://github.com/Daniel-Cocos/linear-regression-from-scratch.git
+```
+
+After publishing to PyPI, that simplifies to:
+
+```bash
+pip install linear-regression-from-scratch
+```
+
+### Install with uv
+
+```bash
+uv pip install -e ".[dev]"       # inside this repo
+```
+
+From another project:
+
+```bash
+uv pip install git+https://github.com/Daniel-Cocos/linear-regression-from-scratch.git
+# or, in a uv-managed project:
+uv add git+https://github.com/Daniel-Cocos/linear-regression-from-scratch.git
+```
+
+### Install with Poetry
+
+From another project:
+
+```bash
+poetry add git+https://github.com/Daniel-Cocos/linear-regression-from-scratch.git
+# or from a local editable checkout for development:
+poetry add ../linear-regression-from-scratch
+```
+
+### Install with Nix flakes
+
+Add it to another flake's inputs and consume the built package:
+
+```nix
+inputs.linear-regression-from-scratch.url =
+  "github:Daniel-Cocos/linear-regression-from-scratch";
+```
+
+```nix
+inputs.linear-regression-from-scratch.packages.${system}.default
+```
+
+Inside this repository itself:
+
+```bash
+nix build        # reproducibly build the wheel
+nix develop      # reproducible dev shell with an editable install
+```
