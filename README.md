@@ -13,10 +13,7 @@ pytest -q
 ```
 
 
-## Part 1. What this project is (in plain English)
-
-This section is written for **non-technical readers and developers who have not
-worked with linear regression before**.
+## What this project is (in plain English)
 
 ### What linear regression does
 
@@ -54,3 +51,27 @@ so anyone can install it with a single command and use it in their own code.
 - **MAE (Mean Absolute Error)** - the average absolute size of prediction errors.
   Lower is better. Unlike RMSE, it is less affected by a few large errors, so it
   gives a steadier view of typical performance.
+
+### Proven correct against the industry standard
+
+Below, **"mine"** is this from-scratch library and **"scikit-learn"** is the
+widely used, industry-standard reference library. The **|diff|** column shows how
+far apart their results are. Values of 0.0000 mean the two agree to the
+precision shown, which proves the from-scratch implementation is correct.
+
+| Model | Metric | mine | scikit-learn | \|diff\| |
+| --- | --- | --- | --- | --- |
+| OLS | R2 | 0.9803 | 0.9803 | 0.0000 |
+| OLS | RMSE | 1.2878 | 1.2878 | 0.0000 |
+| OLS | MAE | 1.0078 | 1.0078 | 0.0000 |
+| Ridge (L2) | R2 | 0.9886 | 0.9886 | 0.0000 |
+| Ridge (L2) | RMSE | 0.7553 | 0.7553 | 0.0000 |
+| Ridge (L2) | MAE | 0.6012 | 0.6012 | 0.0000 |
+| Lasso (L1) | R2 | 0.9738 | 0.9738 | 0.0000 |
+| Lasso (L1) | RMSE | 1.0704 | 1.0699 | 0.0005 |
+| Lasso (L1) | MAE | 0.8654 | 0.8650 | 0.0004 |
+
+The tiny differences on the Lasso rows are expected: Lasso is solved with an
+iterative proximal-gradient method, so a perfect match takes more iterations.
+Both the accuracy (R2, RMSE, MAE) and the sparsity pattern line up with
+scikit-learn.
