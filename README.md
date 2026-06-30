@@ -143,3 +143,42 @@ Inside this repository itself:
 nix build        # reproducibly build the wheel
 nix develop      # reproducible dev shell with an editable install
 ```
+
+### Example Ussage
+
+```python
+import numpy as np
+from linear_regression_from_scratch import (
+    LinearRegression, RidgeRegression, LassoRegression, PolynomialFeatures,
+)
+
+rng = np.random.default_rng(0)
+
+# 120 samples, 3 input features, each drawn from the range [0, 10]
+X = rng.uniform(0, 10, size=(120, 3))
+
+# Build targets from a known rule (y = 3*x1 - 2*x2 + 1.5*x3 + 4), plus noise.
+# The model does NOT see this rule; it has to learn it from X and y.
+true_w = np.array([3, -2, 1.5])
+true_b = 4
+y = X @ true_w + true_b + rng.normal(0, 1, size=120)
+
+# Ordinary least squares, trained with Adam
+ols = LinearRegression(solver="adam", lr=0.05, n_iter=2000).fit(X, y)
+print(ols.score(X, y))          # R^2
+print(ols.w_, ols.b_)           # coefficients in original feature space
+
+# Lasso: automatic feature selection (drives irrelevant weights to 0)
+lasso = LassoRegression(alpha=0.1).fit(X, y)
+
+# Polynomial regression via a feature transform
+poly = PolynomialFeatures(degree=2).fit(X)
+model = LinearRegression(solver="normal").fit(poly.transform(X), y)
+```
+
+`solver="normal"` solves the linear system directly in one step using the
+closed-form normal equations (an exact, fast answer, no learning-rate tuning).
+`solver="adam"` instead learns the weights iteratively with the Adam optimizer
+(approximate, but it is the only option that works for the regularized models and
+scales to problems with no closed-form solution). Both land on the same answer
+for plain OLS.
