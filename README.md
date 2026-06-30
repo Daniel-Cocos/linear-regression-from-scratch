@@ -184,4 +184,4 @@ scales to problems with no closed-form solution). Both land on the same answer
 for plain OLS.
 
 ## The math used
-If you are interested in the math I explain in a separate notebook (here)[./docs/01_maths_and_theory.ipynb].
+If you are interested in the math I explain in a separate notebook [here](./docs/01_maths_and_theory.ipynb).
